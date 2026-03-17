@@ -18,12 +18,20 @@ python setup.py --buildconf Release      # Release build
 cmake --build build
 
 # Open in Visual Studio
-# Open build/GTASA.sln
+# Open build/GTASA.sln (or build/GTASA.slnx)
 ```
 
-**Requirements**: Visual Studio 2022/2026, Python 3.x, Conan 2.x (`pip install conan`), CMake 3.20+. Run `conan profile detect` on first Conan install.
+**Requirements**:
+- [Visual Studio 2026](https://visualstudio.microsoft.com/downloads/) (default; VS 2022 also works but requires changing `compiler.version` to `194` in `conanprofile.txt`)
+- [Python](https://www.python.org/downloads/) >= 3.x
+- [Conan](https://docs.conan.io/2/installation.html) >= 2.x (`pip install conan`; first install also run `conan profile detect`)
+- [CMake](https://cmake.org/download/) >= 4.20 (Conan auto-downloads cmake/4.2.0 via `conanprofile.txt` `[replace_tool_requires]`)
 
 **Output**: `bin/<config>/gta_reversed.asi` — DLL injected into GTA SA via ASI loader.
+
+**Game EXE**: Must use GTA SA **Compact exe** (exactly 5,189,632 bytes / 4.94 MiB). This is NOT the same as the standard 1.0 US exe. Using the wrong exe causes random crashes.
+
+**Installation**: Run `contrib/install.py` with administrator privileges — it unpacks `contrib/plugins.zip` (ASI loader + mouse fix) into the game directory and creates symlinks from `<game>/scripts/` to `bin/<config>/`, so rebuilds are automatically picked up. Alternatively, manually copy `gta_reversed.asi` + ASI loader files.
 
 There is no test suite. Testing is done by injecting the DLL into the game and verifying behavior in-game. Use the debug menu (F7) for quick access.
 
