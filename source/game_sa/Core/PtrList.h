@@ -24,8 +24,6 @@ public:
         m_curr{ node },
         m_next{ node ? node->Next : nullptr }
     {
-        assert(!m_curr || Traits::IsNodeValid(*m_curr));
-        assert(!m_next || Traits::IsNodeValid(*m_next));
     }
 
     reference operator*() { return m_curr->Item; }

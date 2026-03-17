@@ -29,9 +29,28 @@ cmake --build build
 
 **Output**: `bin/<config>/gta_reversed.asi` — DLL injected into GTA SA via ASI loader.
 
-**Game EXE**: Must use GTA SA **Compact exe** (exactly 5,189,632 bytes / 4.94 MiB). This is NOT the same as the standard 1.0 US exe. Using the wrong exe causes random crashes.
+**Note on cmake path**: `cmake` may not be in the system PATH. Conan auto-downloads it to `~/.conan2/p/cmake*/p/bin/cmake.exe`. To find and use it:
+```bash
+# Find the Conan-installed cmake
+find ~/.conan2 -name "cmake.exe" -type f 2>/dev/null
+# Build using the full path (example, actual hash varies)
+/c/Users/admin/.conan2/p/cmake20ac4e0137fee/p/bin/cmake.exe --build build
+```
 
-**Installation**: Run `contrib/install.py` with administrator privileges — it unpacks `contrib/plugins.zip` (ASI loader + mouse fix) into the game directory and creates symlinks from `<game>/scripts/` to `bin/<config>/`, so rebuilds are automatically picked up. Alternatively, manually copy `gta_reversed.asi` + ASI loader files.
+**Game EXE**: Must use GTA SA **1.0 US exe**. Both the compact (5.0 MiB) and full-size (13.7 MiB) variants work, as long as memory addresses match. See [Steam guide](https://steamcommunity.com/sharedfiles/filedetails/?id=3036381821) for downgrader details.
+
+**Installation**: Run `contrib/install.py` with administrator privileges — it unpacks `contrib/plugins.zip` (ASI loader + mouse fix) into the game directory and creates symlinks from `<game>/scripts/` to `bin/<config>/`, so rebuilds are automatically picked up. Alternatively, manually install:
+```bash
+# 1. Unpack plugins
+python -c "import zipfile; zipfile.ZipFile('contrib/plugins.zip').extractall('<game_dir>')"
+# 2. Create scripts dir and symlinks (requires admin)
+mkdir -p <game_dir>/scripts
+mklink "<game_dir>\scripts\gta_reversed.asi" "<repo>\bin\Debug\gta_reversed.asi"
+mklink "<game_dir>\scripts\gta_reversed.pdb" "<repo>\bin\Debug\gta_reversed.pdb"
+# 3. Set environment variables
+# GTA_SA_DIR = <game_dir>
+# GTA_SA_EXE = <game_dir>\gta_sa.exe
+```
 
 There is no test suite. Testing is done by injecting the DLL into the game and verifying behavior in-game. Use the debug menu (F7) for quick access.
 

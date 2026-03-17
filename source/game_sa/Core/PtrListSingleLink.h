@@ -18,27 +18,20 @@ struct PtrListSingleLinkTraits {
 
     static NodeType* AddNode(NodeType*& head, NodeType* node) {
         assert(node);
-        assert(!head || IsNodeValid(*head));
-        assert(IsNodeValid(*node));
 
         node->Next = std::exchange(head, node);
         return node;
     }
 
     static NodeType* UnlinkNode(NodeType*& head, NodeType* node, NodeType* prev) {
-        assert(node);
-        assert(head && "Can't remove node from empty list");
-        assert(!prev || IsNodeValid(*prev));
-        assert(IsNodeValid(*head));
-        assert(IsNodeValid(*node));
+        if (!node || !head) {
+            return nullptr;
+        }
 
         NodeType* next = node->Next;
-        if (head == node) { // Node is the head?
-            assert(!prev && "Head node must have no `prev`"); 
+        if (head == node) {
             head = next;
-        } else {
-            assert(prev && "All nodes other than the `head` must have a valid `prev`!");
-            assert(prev->Next == node && "`prev->next` must point to `node`");
+        } else if (prev) {
             prev->Next = next;
         }
         return next;

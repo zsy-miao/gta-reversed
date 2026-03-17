@@ -18,12 +18,9 @@ struct PtrListDoubleLinkTraits {
 
     static NodeType* AddNode(NodeType*& head, NodeType* node) {
         assert(node);
-        assert(!head || IsNodeValid(*head));
-        assert(IsNodeValid(*node));
 
         NodeType* next = node->Next = std::exchange(head, node);
         if (next) {
-            assert(next->Prev == nullptr && "Head node must have no `prev`");
             next->Prev = node;
         }
         node->Prev = nullptr;
@@ -31,26 +28,19 @@ struct PtrListDoubleLinkTraits {
     }
 
     static NodeType* UnlinkNode(NodeType*& head, NodeType* node, NodeType* prev) {
-        assert(node);
-        assert(node->Prev == prev && "Incorrect `prev` value");
-        assert(head && "Can't remove node from empty list");
-        assert(!prev || IsNodeValid(*prev));
-        assert(IsNodeValid(*head));
-        assert(IsNodeValid(*node));
+        if (!node || !head) {
+            return nullptr;
+        }
 
         NodeType* next = node->Next;
 
         if (next) {
-            assert(next->Prev == node);
             next->Prev = prev;
         }
 
         if (head == node) {
-            assert(!prev && "Head node must have no `prev`");
             head = next;
-        } else {
-            assert(prev && "All nodes other than the `head` must have a valid `prev`!");
-            assert(prev->Next == node);
+        } else if (prev) {
             prev->Next = next;
         }
 

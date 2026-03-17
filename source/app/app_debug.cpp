@@ -61,6 +61,12 @@ void FlushObrsPrintfs() {
 
 // This probably should be in winps :D
 LONG WINAPI WindowsExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo) {
+    // C++ exceptions (0xe06d7363) thrown by system components (e.g., MSCTF/IME on Windows 11)
+    // are meant to be caught by their own SEH handlers. As a VEH, we must let these pass through.
+    if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xe06d7363) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
     // If this function itself crashes it's invoked again
     // So let's prevent the recusion with this simple hack
     static bool s_HasHandled = false;
@@ -193,7 +199,7 @@ LONG WINAPI WindowsExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo) {
         logger->flush();
     });
 
-    return EXCEPTION_EXECUTE_HANDLER;
+    return EXCEPTION_CONTINUE_SEARCH;
 }
 
 notsa::Logging::Logging() {

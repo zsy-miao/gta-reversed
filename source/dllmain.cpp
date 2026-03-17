@@ -1,6 +1,8 @@
 #include "StdInc.h"
 #include "config.h"
 
+#include <crtdbg.h>
+
 #include "extensions/CommandLine.h"
 #include "extensions/Configuration.hpp"
 #include "reversiblehooks/RootHookCategory.h"
@@ -86,6 +88,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
     {
     case DLL_PROCESS_ATTACH:
     {
+        // Suppress CRT debug assertion dialogs — redirect to debug output instead of blocking the game.
+        _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_DEBUG);
+        _CrtSetReportMode(_CRT_ERROR,  _CRTDBG_MODE_DEBUG);
+        _CrtSetReportMode(_CRT_WARN,   _CRTDBG_MODE_DEBUG);
+
         // Fail if RenderWare has already been started
         if (*(RwCamera**)0xC1703C)
         {
