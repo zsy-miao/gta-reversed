@@ -177,6 +177,33 @@ static void LogPlayerPos(FILE* log, const char* label, int idx, int total) {
 }
 
 // ============================================================================
+// UpdatePads suppression — patch first byte to RET (0xC3) so the game
+// stops overwriting NewState from hardware input during pad commands.
+// ============================================================================
+static uint8_t g_origUpdatePadsByte = 0;
+static bool    g_updatePadsSuppressed = false;
+
+static void SuppressUpdatePads(FILE* log) {
+    if (g_updatePadsSuppressed) return;
+    if (PatchByte(ADDR_UPDATE_PADS, 0xC3, &g_origUpdatePadsByte)) {
+        g_updatePadsSuppressed = true;
+        LogWrite(log, "  UpdatePads suppressed (patched 0x%02X -> 0xC3 at 0x%08X)", g_origUpdatePadsByte, ADDR_UPDATE_PADS);
+    } else {
+        LogWrite(log, "  WARNING: Failed to suppress UpdatePads");
+    }
+}
+
+static void RestoreUpdatePads(FILE* log) {
+    if (!g_updatePadsSuppressed) return;
+    if (UnpatchByte(ADDR_UPDATE_PADS, g_origUpdatePadsByte)) {
+        g_updatePadsSuppressed = false;
+        LogWrite(log, "  UpdatePads restored (0x%02X at 0x%08X)", g_origUpdatePadsByte, ADDR_UPDATE_PADS);
+    } else {
+        LogWrite(log, "  WARNING: Failed to restore UpdatePads");
+    }
+}
+
+// ============================================================================
 // Command executors
 // ============================================================================
 
@@ -217,6 +244,7 @@ static void ExecTeleport(float x, float y, float z, volatile bool* stop, FILE* l
 static void ExecPad(const PadEntry& entry, uint32_t ms, volatile bool* stop, FILE* log, int idx, int total) {
     LogWrite(log, "[%d/%d] EXEC: pad offset=0x%02X value=%d duration=%ums", idx, total, entry.offset, entry.value, ms);
     LogPlayerPos(log, "BEFORE", idx, total);
+    SuppressUpdatePads(log);
     DWORD start = GetTickCount();
     uint32_t writes = 0;
     while (GetTickCount() - start < ms && !*stop) {
@@ -226,6 +254,7 @@ static void ExecPad(const PadEntry& entry, uint32_t ms, volatile bool* stop, FIL
     }
     // Reset to zero
     SafeWrite<int16_t>(ADDR_PAD0_NEW_STATE + entry.offset, 0);
+    RestoreUpdatePads(log);
     DWORD elapsed = GetTickCount() - start;
     LogPlayerPos(log, "AFTER", idx, total);
     LogWrite(log, "[%d/%d] DONE: pad offset=0x%02X (elapsed %ums, writes ~%u)", idx, total, entry.offset, elapsed, writes);
@@ -234,6 +263,7 @@ static void ExecPad(const PadEntry& entry, uint32_t ms, volatile bool* stop, FIL
 static void ExecPadMulti(const PadEntry* entries, int count, uint32_t ms, volatile bool* stop, FILE* log, int idx, int total) {
     LogWrite(log, "[%d/%d] EXEC: padmulti %d fields, duration=%ums", idx, total, count, ms);
     LogPlayerPos(log, "BEFORE", idx, total);
+    SuppressUpdatePads(log);
     DWORD start = GetTickCount();
     uint32_t writes = 0;
     while (GetTickCount() - start < ms && !*stop) {
@@ -247,6 +277,7 @@ static void ExecPadMulti(const PadEntry* entries, int count, uint32_t ms, volati
     for (int i = 0; i < count; i++) {
         SafeWrite<int16_t>(ADDR_PAD0_NEW_STATE + entries[i].offset, 0);
     }
+    RestoreUpdatePads(log);
     DWORD elapsed = GetTickCount() - start;
     LogPlayerPos(log, "AFTER", idx, total);
     LogWrite(log, "[%d/%d] DONE: padmulti %d fields (elapsed %ums, writes ~%u)", idx, total, count, elapsed, writes);
@@ -287,6 +318,12 @@ void ExecuteScript(ScriptCommand* cmds, int count, volatile bool* stop, FILE* lo
         case CmdType::Nop:
             break;
         }
+    }
+
+    // Safety: always restore UpdatePads if script was interrupted mid-pad-command
+    if (g_updatePadsSuppressed) {
+        LogWrite(log, "Safety restore: UpdatePads was still suppressed");
+        RestoreUpdatePads(log);
     }
 
     DWORD totalElapsed = GetTickCount() - totalStart;

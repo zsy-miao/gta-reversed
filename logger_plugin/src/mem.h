@@ -9,6 +9,7 @@
 constexpr uintptr_t ADDR_PLAYER_PED_PTR   = 0xB7CD98; // CWorld::Players[0].m_pPed
 constexpr uintptr_t ADDR_GAME_TIME_MS     = 0xB7CB84; // CTimer::m_snTimeInMilliseconds
 constexpr uintptr_t ADDR_PAD0_NEW_STATE   = 0xB73458; // CPad::Pads[0].NewState (CControllerState, 0x30 bytes)
+constexpr uintptr_t ADDR_UPDATE_PADS      = 0x541DD0; // CPad::UpdatePads() — called each frame
 
 // CPlaceable / CMatrix offsets
 constexpr uintptr_t OFF_MATRIX_PTR  = 0x14; // CPlaceable::m_matrix (CMatrixLink*)
@@ -44,4 +45,23 @@ static bool SafeWrite(uintptr_t address, const T& value) {
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         return false;
     }
+}
+
+// ============================================================================
+// PatchByte / UnpatchByte — write a single byte to code section (.text)
+// Handles VirtualProtect for execute-only pages.
+// ============================================================================
+static bool PatchByte(uintptr_t address, uint8_t newByte, uint8_t* outOldByte) {
+    DWORD oldProtect;
+    if (!VirtualProtect(reinterpret_cast<void*>(address), 1, PAGE_EXECUTE_READWRITE, &oldProtect))
+        return false;
+    if (outOldByte)
+        *outOldByte = *reinterpret_cast<uint8_t*>(address);
+    *reinterpret_cast<uint8_t*>(address) = newByte;
+    VirtualProtect(reinterpret_cast<void*>(address), 1, oldProtect, &oldProtect);
+    return true;
+}
+
+static bool UnpatchByte(uintptr_t address, uint8_t origByte) {
+    return PatchByte(address, origByte, nullptr);
 }
