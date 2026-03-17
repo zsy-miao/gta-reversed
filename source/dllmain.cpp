@@ -2,10 +2,23 @@
 #include "config.h"
 
 #include <crtdbg.h>
+#include <signal.h>
 
 #include "extensions/CommandLine.h"
 #include "extensions/Configuration.hpp"
 #include "reversiblehooks/RootHookCategory.h"
+
+// Override UCRT's _wassert to log and continue instead of showing a dialog + abort().
+extern "C" void __cdecl _wassert(
+    wchar_t const* expression,
+    wchar_t const* file_name,
+    unsigned       line_number
+) {
+    char expr_buf[256]{}, file_buf[256]{};
+    wcstombs(expr_buf, expression, sizeof(expr_buf) - 1);
+    wcstombs(file_buf, file_name,  sizeof(file_buf) - 1);
+    SPDLOG_ERROR("Assertion failed: {} at {}:{}", expr_buf, file_buf, line_number);
+}
 
 void InjectHooksMain(HMODULE hThisDLL);
 
@@ -88,7 +101,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
     {
     case DLL_PROCESS_ATTACH:
     {
-        // Suppress CRT debug assertion dialogs — redirect to debug output instead of blocking the game.
+        // Suppress all assertion/error dialogs — redirect to stderr (console) instead of blocking the game.
+        _set_error_mode(_OUT_TO_STDERR);
+        _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
         _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_DEBUG);
         _CrtSetReportMode(_CRT_ERROR,  _CRTDBG_MODE_DEBUG);
         _CrtSetReportMode(_CRT_WARN,   _CRTDBG_MODE_DEBUG);

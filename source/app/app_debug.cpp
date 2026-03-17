@@ -61,10 +61,19 @@ void FlushObrsPrintfs() {
 
 // This probably should be in winps :D
 LONG WINAPI WindowsExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo) {
-    // C++ exceptions (0xe06d7363) thrown by system components (e.g., MSCTF/IME on Windows 11)
-    // are meant to be caught by their own SEH handlers. As a VEH, we must let these pass through.
-    if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xe06d7363) {
-        return EXCEPTION_CONTINUE_SEARCH;
+    // As a VEH, we must let non-fatal and internally-handled exceptions pass through.
+    // Only log real OS-level fatal exceptions (ACCESS_VIOLATION, STACK_OVERFLOW, etc.)
+    const auto code = pExceptionInfo->ExceptionRecord->ExceptionCode;
+    switch (code) {
+    case 0xC0000005: // EXCEPTION_ACCESS_VIOLATION
+    case 0xC00000FD: // EXCEPTION_STACK_OVERFLOW
+    case 0xC0000094: // EXCEPTION_INT_DIVIDE_BY_ZERO
+    case 0xC0000096: // EXCEPTION_PRIVILEGED_INSTRUCTION
+    case 0xC000001D: // EXCEPTION_ILLEGAL_INSTRUCTION
+    case 0x80000003: // EXCEPTION_BREAKPOINT (only if no debugger)
+        break; // Handle these
+    default:
+        return EXCEPTION_CONTINUE_SEARCH; // Skip everything else
     }
 
     // If this function itself crashes it's invoked again
