@@ -1,0 +1,20 @@
+# automation.txt — GTA SA Automation Script
+# Place this file as: E:\Games\GTASA\scripts\automation.txt
+# Press F8 in-game to execute, press F8 again to stop
+
+# Wait for world to stabilize
+wait 1000
+
+# Teleport to Grove Street
+teleport 2495 -1668 13.3
+
+# Wait for world to load after teleport
+wait 3000
+
+# Walk forward 3 seconds (LeftStickY = -128 = full speed forward)
+pad left_stick_y -128 3000
+
+# Sprint forward 5 seconds (forward + sprint key)
+padmulti 5000 left_stick_y -128 button_cross 255
+
+log Script finished
