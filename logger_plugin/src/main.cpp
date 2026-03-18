@@ -7,6 +7,7 @@
 #include "mem.h"
 #include "pad.h"
 #include "script.h"
+#include "skip_intro.h"
 
 // ============================================================================
 // Constants
@@ -133,6 +134,8 @@ static DWORD WINAPI AutomationThread(LPVOID param) {
     LogWrite(log, "Automation plugin loaded");
     LogWrite(log, "Press F8 to run automation.txt (or stop a running script)");
 
+    SkipIntro_Run(log, &g_running);
+
     if (!WaitForGameLoaded(log)) {
         LogWrite(log, "Plugin shutting down (game not loaded)");
         fclose(log);
@@ -170,6 +173,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID) {
     switch (reason) {
     case DLL_PROCESS_ATTACH:
         DisableThreadLibraryCalls(hModule);
+        SkipIntro_Patch();
         g_running = true;
         g_thread = CreateThread(nullptr, 0, AutomationThread, hModule, 0, nullptr);
         break;

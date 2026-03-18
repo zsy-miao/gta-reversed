@@ -12,7 +12,7 @@ endif()
 # Static CRT linkage — no runtime DLL dependency
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-add_library(gta_sa_logger MODULE src/main.cpp src/script.cpp)
+add_library(gta_sa_logger MODULE src/main.cpp src/script.cpp src/skip_intro.cpp)
 
 # Output as .asi
 set_target_properties(gta_sa_logger PROPERTIES
