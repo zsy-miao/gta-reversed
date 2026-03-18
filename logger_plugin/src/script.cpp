@@ -1,27 +1,12 @@
 #include "script.h"
 #include "mem.h"
 #include "pad.h"
+#include "log.h"
 #include <cstring>
 #include <cstdlib>
 #include <timeapi.h>
 
 #pragma comment(lib, "winmm.lib")
-
-// ============================================================================
-// Log helper (same format as main.cpp LogWrite)
-// ============================================================================
-static void LogWrite(FILE* f, const char* fmt, ...) {
-    if (!f) return;
-    SYSTEMTIME st;
-    GetLocalTime(&st);
-    fprintf(f, "[%02d:%02d:%02d.%03d] ", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
-    va_list args;
-    va_start(args, fmt);
-    vfprintf(f, fmt, args);
-    va_end(args);
-    fprintf(f, "\n");
-    fflush(f);
-}
 
 // ============================================================================
 // Trim leading/trailing whitespace in-place, return pointer to trimmed start

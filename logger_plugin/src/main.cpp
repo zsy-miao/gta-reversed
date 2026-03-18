@@ -8,6 +8,8 @@
 #include "pad.h"
 #include "script.h"
 #include "skip_intro.h"
+#include "menu_monitor.h"
+#include "log.h"
 
 // ============================================================================
 // Constants
@@ -45,18 +47,6 @@ static FILE* OpenLogFile() {
     return fopen(filePath, "w");
 }
 
-static void LogWrite(FILE* f, const char* fmt, ...) {
-    if (!f) return;
-    SYSTEMTIME st;
-    GetLocalTime(&st);
-    fprintf(f, "[%02d:%02d:%02d.%03d] ", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
-    va_list args;
-    va_start(args, fmt);
-    vfprintf(f, fmt, args);
-    va_end(args);
-    fprintf(f, "\n");
-    fflush(f);
-}
 
 // ============================================================================
 // Detect F8 key press (edge-triggered)
@@ -83,6 +73,7 @@ static bool WaitForGameLoaded(FILE* log) {
             LogWrite(log, "Game loaded (ped=0x%08X, time=%u)", pedPtr, gameTime);
             return true;
         }
+        MenuMonitor_Update(log);
         Sleep(POLL_INTERVAL_MS);
     }
     return false;
@@ -135,6 +126,7 @@ static DWORD WINAPI AutomationThread(LPVOID param) {
     LogWrite(log, "Press F8 to run automation.txt (or stop a running script)");
 
     SkipIntro_Run(log, &g_running);
+    MenuMonitor_Init();
 
     if (!WaitForGameLoaded(log)) {
         LogWrite(log, "Plugin shutting down (game not loaded)");
@@ -158,6 +150,7 @@ static DWORD WINAPI AutomationThread(LPVOID param) {
                 RunScript(log);
             }
         }
+        MenuMonitor_Update(log);
         Sleep(1);
     }
 
