@@ -177,4 +177,32 @@ Script command handlers are registered per-category (`notsa::script::commands::*
 
 All paths relative to `source/`. Use `docs/hooks.csv` (7965+ entries) to look up specific function addresses — grep it, don't load it whole.
 
+## Automation Plugin (`logger_plugin/`)
+
+A standalone ASI plugin for automated in-game testing. Lives in `logger_plugin/` with its own CMake build — completely independent from the main `gta_reversed.asi`.
+
+### Usage
+1. Place script at `<game>/scripts/automation.txt`
+2. Launch game, press **F8** to execute script (press again to stop)
+3. Check logs in `<game>/scripts/logs/`
+
+### Script Commands
+```bash
+wait 1000                                    # Wait ms
+teleport 2495 -1668 13.3                     # Set player position
+pad left_stick_y -128 3000                   # Single input for duration
+padmulti 5000 left_stick_y -128 button_cross 255  # Multiple inputs
+log Some message                             # Print to log
+```
+
+### Build
+```bash
+CMAKE=/c/Users/admin/.conan2/p/cmake20ac4e0137fee/p/bin/cmake.exe
+$CMAKE -G "Visual Studio 18 2026" -A Win32 -B logger_plugin/build -S logger_plugin
+$CMAKE --build logger_plugin/build --config Release
+```
+
+### Key Technical Detail
+Pad commands patch `CPad::UpdatePads()` (0x541DD0) to `RET` during execution, preventing the game from overwriting injected input. Original byte is restored after each command.
+
 @docs/CodingGuidelines.MD
